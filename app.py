@@ -1,39 +1,50 @@
 import streamlit as st
-import pandas as pd
-import PyPDF2
 from PyPDF2 import PdfReader, PdfWriter
 from datetime import date
-import sqlite3
+import mysql
+import mysql.connector
+from mysql.connector import Error
 
-connection = sqlite3.connect("tessera.db")
-cursor = connection.cursor()
+host = "sql8.freesqldatabase.com"
+database = "sql8759807"
+user = "sql8759807"
+password = "QfIfIBAswz"
+port = 3306
+
+st.set_page_config(
+    page_title="My App",
+    page_icon="📊",
+    layout="wide",
+    initial_sidebar_state="collapsed"  # Collapse the sidebar by default
+)
+
+# connection = sqlite3.connect("tessera.db")
+# cursor = connection.cursor()
 
 file_name="carta_della_famiglia_adobe.pdf"
 st.title("ONE FASHION")
 submitted = False
 
-
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS users (
-    id_carta INTEGER PRIMARY KEY,
-    firstname TEXT,
-    lastname TEXT,
-    codice_fiscale TEXT,
-    sex TEXT CHECK(sex IN ('M', 'F')),
-    birthdate TEXT,
-    address TEXT,
-    city TEXT,
-    province TEXT,
-    postalcode INTEGER,
-    phonenumber INTEGER,
-    email TEXT
-)
-""")
-connection.commit()
-connection.close()
+# cursor.execute("""
+# CREATE TABLE IF NOT EXISTS users (
+#     id_carta INTEGER PRIMARY KEY,
+#     firstname TEXT,
+#     lastname TEXT,
+#     codice_fiscale TEXT,
+#     sex TEXT CHECK(sex IN ('M', 'F')),
+#     birthdate TEXT,
+#     address TEXT,
+#     city TEXT,
+#     province TEXT,
+#     postalcode INTEGER,
+#     phonenumber INTEGER,
+#     email TEXT
+# )
+# """)
+# connection.commit()
+# connection.close()
 st.write("Registrazione della tessera associativa")
 st.info("Refresh this page after download.")
-
 
 with st.form("my_form", clear_on_submit=False):
     sesso = "F"
@@ -99,10 +110,13 @@ with st.form("my_form", clear_on_submit=False):
     if submitted:
         pass_flag = True
         carta_n = carta_n.strip()
-        if not carta_n.isdigit() or carta_n == "":
+        if carta_n == "":
             pass_flag = False
             st.error('NUMERO della CARTA errato', icon="🚨")
-
+        if privacy != "Si":
+            pass_flag = False
+            st.error('Privacy rifuto', icon="🚨")
+            
         if pass_flag:
             with open("carta_della_famiglia_adobe.pdf", "rb") as infile:
                 reader = PdfReader(infile)
@@ -160,25 +174,33 @@ with st.form("my_form", clear_on_submit=False):
             # Write out the updated PDF
             with open(file_name, "wb") as outfile:
                 writer.write(outfile)
-            connection = sqlite3.connect("tessera.db")
+            connection = mysql.connector.connect(
+                host=host,
+                database=database,
+                user=user,
+                password=password,
+                port=port
+            )
             cursor = connection.cursor()
             try:
                 cursor.execute("""
-                INSERT INTO users (
-                    id_carta,
-                    firstname,
-                    lastname,
-                    codice_fiscale,
-                    sex,
-                    birthdate,
-                    address,
-                    city,
-                    province,
-                    postalcode,
-                    phonenumber,
-                    email
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """, (carta_n, nome, cognome, cf, sesso, dn, indirizzo, citta, provincia, cap, cellulare, email))
+                    INSERT INTO users (
+                        id_carta,
+                        firstname,
+                        lastname,
+                        codice_fiscale,
+                        sex,
+                        birthdate,
+                        address,
+                        city,
+                        province,
+                        postalcode,
+                        phonenumber,
+                        email,
+                        info
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """, (carta_n, nome, cognome, cf, sesso, dn, indirizzo, citta, provincia, cap, cellulare, email, info == "Si"))
+
 
         # Commit the transaction and close the connection
                 connection.commit()

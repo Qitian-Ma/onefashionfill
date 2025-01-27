@@ -1,18 +1,34 @@
 import pandas as pd
-import sqlite3
+import mysql
+import mysql.connector
+from mysql.connector import Error
 import streamlit as st
 
-password = st.text_input("Password")
 
-if password == "123456":
 
-    connection = sqlite3.connect("tessera.db")
+host = "sql8.freesqldatabase.com"
+database = "sql8759807"
+user = "sql8759807"
+password = "QfIfIBAswz"
+port = 3306
 
+pw = st.text_input("Password")
+
+if pw == "123456":
+    # Database connection
+    connection = mysql.connector.connect(
+    host=host,
+    user=user,
+    password=password,
+    database=database,
+    port=port
+)
+
+    # Fetch table data
     query = "SELECT * FROM users"
+    df = pd.read_sql(query, connection)
 
-    # Execute the query and load the result into a DataFrame
-    df = pd.read_sql_query(query, connection)
-
-    st.write(df)
     # Close the connection
+    st.write(df)
     connection.close()
+    
